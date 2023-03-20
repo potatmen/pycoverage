@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "public test cases",
+      "setup": "python -m pip install pytest astor",
+      "run": "python -m pytest",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    }
+  ]
+}
