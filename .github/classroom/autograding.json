@@ -1,9 +1,9 @@
 {
   "tests": [
     {
-      "name": "public test cases",
-      "setup": "python -m pip install pytest astor",
-      "run": "python -m pytest",
+      "name": "test_assignment2",
+      "setup": "sudo -H pip3 install pytest",
+      "run": "pytest",
       "input": "",
       "output": "",
       "comparison": "included",
