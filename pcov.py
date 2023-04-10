@@ -1,12 +1,36 @@
 import ast
 import argparse
 import sys, subprocess
+import traceback
 from copy import deepcopy
+
+def trace_file_execution(file_name, args):
+    with open(file_name) as f:
+        code = compile(f.read(), file_name, 'exec')
+    lines_executed = set()
+
+    def trace_lines(frame, event, arg):
+        if event == 'line':
+            line_no = frame.f_lineno
+            if line_no not in lines_executed:
+                lines_executed.add(line_no)
+        return trace_lines
+
+    try:
+        sys.settrace(trace_lines)
+        sys.argv = [file_name] + args
+        exec(code, {})
+    except:
+        traceback.print_exc()
+    finally:
+        sys.settrace(None)
+
+    return lines_executed
 
 STATMENTS_COUNT = 0
 BRANCHES_COUNT = 0
 CONDITIONS_COUNT = 0
-
+lines_with_stm = set()
 br_nodes = [ast.If, ast.For, ast.While, ast.IfExp, ast.ListComp]
 
 class MyVisitor(ast.NodeVisitor):
@@ -14,6 +38,7 @@ class MyVisitor(ast.NodeVisitor):
 		global STATMENTS_COUNT, BRANCHES_COUNT
 		if isinstance(node, ast.stmt):
 			STATMENTS_COUNT += 1
+			lines_with_stm.add(node.lineno)
 		if type(node) in br_nodes:
 			BRANCHES_COUNT += 2
 		if type(node) == ast.Try:
@@ -43,10 +68,13 @@ if __name__ == '__main__':
 	
 	
 	# execute the instrumented target script
-	subprocess.call(["python3", target] + args.remaining)
+	executed_lines = set(trace_file_execution(target, args.remaining))
+
+	executed_statements = len(lines_with_stm.intersection(executed_lines))
+	val = (executed_statements/STATMENTS_COUNT) * 100
 
 	print("=====================================")
-	print(f"Statement Coverage: {0.00}% (0 / {STATMENTS_COUNT})")
+	print(f"Statement Coverage: {val:.2f}% ({executed_statements} / {STATMENTS_COUNT})")
 	print(f"Branch Coverage: {0.00}% (0 / {BRANCHES_COUNT})")
 	print(f"Condition Coverage: {0.00}% (0 / {CONDITIONS_COUNT})")
 
