@@ -4,6 +4,9 @@ import sys, subprocess
 import traceback
 from copy import deepcopy
 
+exec_lines = set()
+
+
 def trace_file_execution(file_name, args):
     with open(file_name) as f:
         code = compile(f.read(), file_name, 'exec')
@@ -12,8 +15,8 @@ def trace_file_execution(file_name, args):
     def trace_lines(frame, event, arg):
         if event == 'line':
             line_no = frame.f_lineno
-            if line_no not in lines_executed:
-                lines_executed.add(line_no)
+            if line_no not in exec_lines:
+                exec_lines.add(line_no)
         return trace_lines
 
     try:
@@ -25,9 +28,8 @@ def trace_file_execution(file_name, args):
     finally:
         sys.settrace(None)
 
-    return lines_executed
+    return
 
-STATMENTS_COUNT = 0
 BRANCHES_COUNT = 0
 CONDITIONS_COUNT = 0
 lines_with_stm = set()
@@ -35,9 +37,8 @@ br_nodes = [ast.If, ast.For, ast.While, ast.IfExp, ast.ListComp]
 
 class MyVisitor(ast.NodeVisitor):
 	def generic_visit(self, node):
-		global STATMENTS_COUNT, BRANCHES_COUNT
+		global BRANCHES_COUNT
 		if isinstance(node, ast.stmt):
-			STATMENTS_COUNT += 1
 			lines_with_stm.add(node.lineno)
 		if type(node) in br_nodes:
 			BRANCHES_COUNT += 2
@@ -57,9 +58,6 @@ if __name__ == '__main__':
 	root = ast.parse("".join(lines), target)
 	visitor = MyVisitor()
 	visitor.visit(root)
-	#print(f"STATMENTS_COUNT: {STATMENTS_COUNT}\nBRANCHES_COUNT: {BRANCHES_COUNT}")
-	#print(ast.dump(root, indent=4))
-	#exit(0)
 	# instrument the target script
 
 	print("=====================================")
@@ -68,13 +66,18 @@ if __name__ == '__main__':
 	
 	
 	# execute the instrumented target script
-	executed_lines = set(trace_file_execution(target, args.remaining))
+	trace_file_execution(target, args.remaining)
 
-	executed_statements = len(lines_with_stm.intersection(executed_lines))
-	val = (executed_statements/STATMENTS_COUNT) * 100
+	executed_statements = len(lines_with_stm.intersection(exec_lines))
+
+	all_statements = len(lines_with_stm)
+    
+	val = 0
+	if all_statements != 0:
+		val = (executed_statements/all_statements) * 100
 
 	print("=====================================")
-	print(f"Statement Coverage: {val:.2f}% ({executed_statements} / {STATMENTS_COUNT})")
+	print(f"Statement Coverage: {val:.2f}% ({executed_statements} / {all_statements})")
 	print(f"Branch Coverage: {0.00}% (0 / {BRANCHES_COUNT})")
 	print(f"Condition Coverage: {0.00}% (0 / {CONDITIONS_COUNT})")
 
