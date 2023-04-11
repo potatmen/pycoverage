@@ -39,8 +39,8 @@ br_nodes = [ast.If, ast.For, ast.While, ast.IfExp, ast.ListComp]
 class MyVisitor(ast.NodeVisitor):
 	
 	def generic_visit(self, node):
-		global BRANCHES_COUNT
-        
+		global BRANCHES_COUNT, CONDITIONS_COUNT
+
 		if isinstance(node, ast.stmt):
 			lines_with_stm.add(node.lineno)
 		if type(node) in br_nodes:
@@ -54,6 +54,12 @@ class MyVisitor(ast.NodeVisitor):
 		
 		if type(node) == ast.ExceptHandler:
 			exceptions.add(node.lineno)
+		
+		if type(node) == ast.If or type(node) == ast.While or type(node) == ast.IfExp:
+			if type(node.test) == ast.Compare:
+				CONDITIONS_COUNT += 2 * len(node.test.ops)
+			elif type(node.test) == ast.BoolOp:
+				CONDITIONS_COUNT += 2 * len(node.test.values)
 		super().generic_visit(node)
 
 if __name__ == '__main__':
@@ -113,9 +119,12 @@ if __name__ == '__main__':
 	if BRANCHES_COUNT != 0:
 		bra_prc = (exec_branches/BRANCHES_COUNT) * 100
 	print("=====================================")
-	print(f"Statement Coverage: {stm_prc:.2f}% ({executed_statements} / {all_statements})")
-	print(f"Branch Coverage: {bra_prc:.2f}% ({exec_branches} / {BRANCHES_COUNT})")
-	print(f"Condition Coverage: {0.00}% (0 / {CONDITIONS_COUNT})")
+	if all_statements != 0: 
+		print(f"Statement Coverage: {stm_prc:.2f}% ({executed_statements} / {all_statements})")
+	if BRANCHES_COUNT != 0:
+		print(f"Branch Coverage: {bra_prc:.2f}% ({exec_branches} / {BRANCHES_COUNT})")
+	if CONDITIONS_COUNT != 0:
+		print(f"Condition Coverage: {0.00}% (0 / {CONDITIONS_COUNT})")
 
 	if args.verbose:
 		print("=====================================")
