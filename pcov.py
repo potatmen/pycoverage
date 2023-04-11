@@ -61,6 +61,10 @@ class MyVisitor(ast.NodeVisitor):
 			elif type(node.test) == ast.BoolOp:
 				CONDITIONS_COUNT += 2 * len(node.test.values)
 		super().generic_visit(node)
+		if type(node) == ast.comprehension:
+			for x in node.ifs:
+				CONDITIONS_COUNT += 2 * len(x.ops)
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Measures coverage.')
