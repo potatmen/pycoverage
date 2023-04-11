@@ -1,12 +1,11 @@
 import ast
 import argparse
 import sys
-import traceback
 from copy import deepcopy
-
+import random
 exec_lines = list()
-
-
+if_stmt = dict()
+cond_taken = set()
 def trace_file_execution(file_name, args):
     with open(file_name) as f:
         code = compile(f.read(), file_name, 'exec')
@@ -16,16 +15,19 @@ def trace_file_execution(file_name, args):
             line_no = frame.f_lineno
             if line_no:
                 exec_lines.append(line_no)
+            if line_no in if_stmt:
+                globals_ = frame.f_globals
+                locals_ = frame.f_locals 
+                code_object = compile(ast.Expression(if_stmt[line_no]), '<ast>', 'eval')
+                res = eval(code_object, globals_, locals_)
+                cond_taken.add((line_no, res))
+
         return trace_lines
 
-    try:
-        sys.settrace(trace_lines)
-        sys.argv = [file_name] + args
-        exec(code, {})
-    except:
-        traceback.print_exc()
-    finally:
-        sys.settrace(None)
+    sys.settrace(trace_lines)
+    sys.argv = [file_name] + args
+    exec(code, {})
+    sys.settrace(None)
 
     return
 
@@ -40,7 +42,7 @@ class MyVisitor(ast.NodeVisitor):
 	
 	def generic_visit(self, node):
 		global BRANCHES_COUNT, CONDITIONS_COUNT
-
+			
 		if isinstance(node, ast.stmt):
 			lines_with_stm.add(node.lineno)
 		if type(node) in br_nodes:
@@ -60,11 +62,8 @@ class MyVisitor(ast.NodeVisitor):
 				CONDITIONS_COUNT += 2 * len(node.test.ops)
 			elif type(node.test) == ast.BoolOp:
 				CONDITIONS_COUNT += 2 * len(node.test.values)
+			if_stmt[node.lineno] = node.test
 		super().generic_visit(node)
-		if type(node) == ast.comprehension:
-			for x in node.ifs:
-				CONDITIONS_COUNT += 2 * len(x.ops)
-
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Measures coverage.')
@@ -118,17 +117,21 @@ if __name__ == '__main__':
 
 	
 	exec_branches = len(pairs)
-
+	res = random.randrange(1, )
 	bra_prc = 0
 	if BRANCHES_COUNT != 0:
 		bra_prc = (exec_branches/BRANCHES_COUNT) * 100
+	conds = len(cond_taken)
+	cond_prc = 0
+	if CONDITIONS_COUNT != 0:
+		cond_prc = (conds /CONDITIONS_COUNT) * 100
 	print("=====================================")
 	if all_statements != 0: 
 		print(f"Statement Coverage: {stm_prc:.2f}% ({executed_statements} / {all_statements})")
 	if BRANCHES_COUNT != 0:
 		print(f"Branch Coverage: {bra_prc:.2f}% ({exec_branches} / {BRANCHES_COUNT})")
 	if CONDITIONS_COUNT != 0:
-		print(f"Condition Coverage: {0.00}% (0 / {CONDITIONS_COUNT})")
+		print(f"Condition Coverage: {cond_prc:.2f}% ({conds} / {CONDITIONS_COUNT})")
 
 	if args.verbose:
 		print("=====================================")
