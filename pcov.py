@@ -63,6 +63,8 @@ class MyVisitor(ast.NodeVisitor):
 			elif type(node.test) == ast.BoolOp:
 				CONDITIONS_COUNT += 2 * len(node.test.values)
 			if_stmt[node.lineno] = node.test
+		if type(node) == ast.comprehension:
+			CONDITIONS_COUNT += 2 * len(node.ifs)	
 		super().generic_visit(node)
 
 if __name__ == '__main__':
