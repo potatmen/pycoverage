@@ -1,4 +1,4 @@
-## CS453 Assignment 2: Coverage Profiler for Python
+Coverage Profiler for Python
 
 With this assignment, we will try implementing a basic coverage profiler for Python that can measure statement, branch, and condition coverage. Write a program that accepts another Python script file, as well as its arguments (if any required), and prints out the coverage achieved. The skeleton code, called `pcov.py`, contains a specific format. Consider the following target code, `example2.py`, which you can find under the directry `examples`:
 
@@ -78,12 +78,4 @@ $ python pcov.py -t [your target python script file] [any command-line arguments
 ```
 
 The repository also includes public test cases: please refer to them for mode detail. For example, while we test for the verbose mode output, parentheses do not really matter (i.e., `(y == 1)` and `y == 1` are the same as a representation of a condition).
-
-### Libraries and Python Version
-
-The template repository is configured with Python 3.9. The `ast` module in version 3.9 supports `unparse`: if you use this, you do not need the dependnece on `astor`. So, ideally, no external library is needed.
-
-### Submission Deadline
-
-You need to submit this assignment before **18:00 on 12th of April, 2023.**
 
